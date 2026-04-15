@@ -5,6 +5,7 @@ This class handles requests from each client connecting to the server
  */
 import java.io.*;
 import java.net.*;
+import java.util.logging.Logger;
 
 public class MathThread extends Thread {
     protected Socket clientSocket;
@@ -13,6 +14,7 @@ public class MathThread extends Thread {
     public MathThread(Socket clientSocket) {
         // Set up the connection socket for this thread so it can talk with the client
         this.clientSocket = clientSocket;
+        this.userName = clientSocket.getRemoteSocketAddress().toString();
     }
 
     /*
@@ -75,6 +77,7 @@ public class MathThread extends Thread {
         InputStream in = null;
         BufferedReader bufferedIn = null;
         DataOutputStream out = null;
+        Logger log = LogManager.getLogger();
 
         try {
             in = clientSocket.getInputStream();
@@ -86,6 +89,8 @@ public class MathThread extends Thread {
         }
 
         String message;
+        // Start the timer for how long the user has been connected
+        long startTime = System.currentTimeMillis();
         while (true)    {
             try {
                 message = bufferedIn.readLine();
@@ -93,6 +98,13 @@ public class MathThread extends Thread {
                     // When the client sends terminate message, terminate the connection
                     out.writeBytes("Closing connection");
                     clientSocket.close();
+                    long duration = System.currentTimeMillis() - startTime;
+                    if (userName.equals(clientSocket.getRemoteSocketAddress().toString()))   {
+                        log.warning("Unknown user(" + userName + ") diconnected. Duration: " + duration + " ms");
+                    }
+                    else {
+                        log.info(userName + "(" + clientSocket.getRemoteSocketAddress().toString() + ") disconnected. Duration: " + duration + " ms");
+                    }
                 }
                 if (message.equalsIgnoreCase("INIT"))   {
                     // Expecting the next line to be the username
@@ -103,13 +115,17 @@ public class MathThread extends Thread {
                     else {
                         this.userName = userArg;
                         out.writeBytes("User initialized");
+                        log.info(userName + "(" + clientSocket.getRemoteSocketAddress().toString() + ") has connected");
                     }
                 }
                 if (message.equalsIgnoreCase("CALC"))   {
                     // Expecting the next line to be the equation
                     String equation = bufferedIn.readLine();
+
+                    log.info(userName + "(" + clientSocket.getRemoteSocketAddress().toString() + ") requested calculation of [" + equation + "]");
+
+                    out.writeBytes(calculate(equation));
                 }
-                // TODO Log things
             } catch (IOException e) {
                 e.printStackTrace();
                 return;

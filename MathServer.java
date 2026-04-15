@@ -13,13 +13,18 @@ public class MathServer {
         ServerSocket serverSocket = null;
         Socket socket = null;
 
+        LogManager.setup();
+
         // Create welcoming socket
         try {
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
             e.printStackTrace();
-
+            return;
         }
+
+        LogManager.getLogger().info("Server initialized on port: " + PORT);
+
         // Every time a new client connects to the server, start a thread to handle communication with it
         while (true) {
             try {
