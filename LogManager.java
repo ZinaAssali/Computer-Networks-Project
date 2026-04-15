@@ -2,7 +2,7 @@ import java.util.logging.*;
 import java.io.IOException;
 
 public class LogManager {
-    private static Logger logger;
+    private static Logger logger = Logger.getLogger("ServerLogger");
 
     public static Logger getLogger()   { return logger;}
 
@@ -11,9 +11,6 @@ public class LogManager {
     Initializes the logger for logging server activity
      */
     public static synchronized void setup() {
-        // Do nothing if the logger is already set up
-        if (logger != null) { return; }
-
         // Set up
         FileHandler fh = null;
         try {
@@ -22,7 +19,10 @@ public class LogManager {
             // Set format for logs (Date - Level - Message)
             fh.setFormatter(new SimpleFormatter());
 
+            fh.setLevel(Level.ALL);
+
             logger.addHandler(fh);
+            logger.setLevel(Level.ALL);
 
             // Stop logs from being printed to the consol
             logger.setUseParentHandlers(false);
