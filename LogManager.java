@@ -1,5 +1,5 @@
-import java.util.logging.*;
 import java.io.IOException;
+import java.util.logging.*;
 
 public class LogManager {
     private static Logger logger = Logger.getLogger("ServerLogger");
