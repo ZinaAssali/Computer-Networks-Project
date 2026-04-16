@@ -80,8 +80,8 @@ public class MathThread extends Thread {
         Logger log = LogManager.getLogger();
 
         try {
-            in = clientSocket.getInputStream();
-            bufferedIn = new BufferedReader(new InputStreamReader(in));
+            bufferedIn = new BufferedReader(
+                    new InputStreamReader(clientSocket.getInputStream()));
             out = new DataOutputStream(clientSocket.getOutputStream());
         } catch (IOException e)   {
             // Terminate the thread if making either stream and/or buffer fail
@@ -94,37 +94,52 @@ public class MathThread extends Thread {
         while (true)    {
             try {
                 message = bufferedIn.readLine();
-                if (message.equalsIgnoreCase("CLOSE"))  {
-                    // When the client sends terminate message, terminate the connection
-                    out.writeBytes("Closing connection");
-                    clientSocket.close();
-                    long duration = System.currentTimeMillis() - startTime;
-                    if (userName.equals(clientSocket.getRemoteSocketAddress().toString()))   {
-                        log.warning("Unknown user(" + userName + ") diconnected. Duration: " + duration + " ms");
-                    }
-                    else {
-                        log.info(userName + "(" + clientSocket.getRemoteSocketAddress().toString() + ") disconnected. Duration: " + duration + " ms");
-                    }
+                if (message == null) {
+                    break;
                 }
-                if (message.equalsIgnoreCase("INIT"))   {
-                    // Expecting the next line to be the username
+                if (message.equalsIgnoreCase("INIT")) {
                     String userArg = bufferedIn.readLine();
-                    if (userArg == null)    {
-                        out.writeBytes("Missing argument: User Name");
-                    }
-                    else {
+
+                    if (userArg == null) {
+                        out.writeBytes("Missing argument: User Name\n");
+                        out.flush();
+                    } else {
                         this.userName = userArg;
-                        out.writeBytes("User initialized");
-                        log.info(userName + "(" + clientSocket.getRemoteSocketAddress().toString() + ") has connected");
+                        out.writeBytes("User initialized\n");
+                        out.flush();
+                        log.info(userName + "(" + clientSocket.getRemoteSocketAddress() + ") has connected");
                     }
-                }
-                if (message.equalsIgnoreCase("CALC"))   {
-                    // Expecting the next line to be the equation
+                } else if (message.equalsIgnoreCase("CALC")) {
                     String equation = bufferedIn.readLine();
 
-                    log.info(userName + "(" + clientSocket.getRemoteSocketAddress().toString() + ") requested calculation of [" + equation + "]");
+                    if (equation == null) {
+                        out.writeBytes("Missing argument: equation\n");
+                        out.flush();
+                        continue;
+                    }
 
-                    out.writeBytes(calculate(equation));
+                    log.info(userName + "(" + clientSocket.getRemoteSocketAddress()
+                            + ") requested calculation of [" + equation + "]");
+
+                    out.writeBytes(calculate(equation) + "\n");
+                    out.flush();
+                } else if (message.equalsIgnoreCase("CLOSE")) {
+                    out.writeBytes("Closing connection\n");
+                    out.flush();
+
+                    long duration = System.currentTimeMillis() - startTime;
+                    if (userName.equals(clientSocket.getRemoteSocketAddress().toString())) {
+                        log.warning("Unknown user(" + userName + ") disconnected. Duration: " + duration + " ms");
+                    } else {
+                        log.info(userName + "(" + clientSocket.getRemoteSocketAddress()
+                                + ") disconnected. Duration: " + duration + " ms");
+                    }
+
+                    clientSocket.close();
+                    break;
+                } else {
+                    out.writeBytes("Unknown command\n");
+                    out.flush();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
